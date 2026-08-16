@@ -1,0 +1,6 @@
+node_modules/
+dist/
+build/
+temp_screenshots/
+.env
+*.log

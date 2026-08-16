@@ -1,3 +1,10 @@
+node_modules/
+dist/
+build/
+temp_screenshots/
+.env
+*.log
+
 node_modules
 # Keep environment variables out of version control
 .env
