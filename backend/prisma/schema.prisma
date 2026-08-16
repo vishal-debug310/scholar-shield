@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  LEARNER
+  PARENT
+}
+
+enum AlertType {
+  RESTRICTED_SEARCH
+  UNAUTHORIZED_EXIT_ATTEMPT
+  DEVICE_OFFLINE
+  SCREENSHOT_FLAG
+}
+
+model User {
+  id           String   @id @default(uuid())
+  fullName     String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(LEARNER)
+  
+  // Learner specific fields
+  learnerCode  String?  @unique // Unique code for parents to link
+  parentPin    String?  // Hashed PIN set by parent for focus mode exit
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relationships
+  childrenLinks ParentChild[] @relation("ParentToChildren")
+  parentLinks   ParentChild[] @relation("ChildToParents")
+  
+  sessions      FocusSession[]
+  alerts        Alert[]
+  screenshots   ScreenshotLog[]
+}
+
+model ParentChild {
+  id        String   @id @default(uuid())
+  parentId  String
+  childId   String
+  createdAt DateTime @default(now())
+
+  parent    User     @relation("ParentToChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  child     User     @relation("ChildToParents", fields: [childId], references: [id], onDelete: Cascade)
+
+  @@unique([parentId, childId])
+}
+
+model FocusSession {
+  id        String    @id @default(uuid())
+  userId    String
+  startTime DateTime  @default(now())
+  endTime   DateTime?
+  isActive  Boolean   @default(true)
+  
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Alert {
+  id        String    @id @default(uuid())
+  userId    String    // Child ID
+  type      AlertType
+  message   String
+  metadata  Json?     // Search query details, timestamp, etc.
+  isRead    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ScreenshotLog {
+  id        String   @id @default(uuid())
+  userId    String   // Child ID
+  imageUrl  String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
